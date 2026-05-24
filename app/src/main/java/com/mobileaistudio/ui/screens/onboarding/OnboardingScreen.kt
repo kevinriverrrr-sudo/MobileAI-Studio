@@ -81,57 +81,59 @@ fun OnboardingScreen(navController: NavController, viewModel: OnboardingViewMode
         }
     }
 
-    HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize(),
-        userScrollEnabled = false
-    ) { page ->
-        when (page) {
-            0 -> OnboardingPageWelcome(onNext = { scope.launch { pagerState.animateScrollToPage(1) } })
-            1 -> OnboardingPageHuggingFace(
-                token = token,
-                onTokenChange = { token = it },
-                tokenChecking = tokenChecking,
-                tokenValid = tokenValid,
-                onCheckToken = {
-                    if (viewModel.validateToken(token)) {
-                        viewModel.saveToken(token)
+    Column(modifier = Modifier.fillMaxSize()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f),
+            userScrollEnabled = false
+        ) { page ->
+            when (page) {
+                0 -> OnboardingPageWelcome(onNext = { scope.launch { pagerState.animateScrollToPage(1) } })
+                1 -> OnboardingPageHuggingFace(
+                    token = token,
+                    onTokenChange = { token = it },
+                    tokenChecking = tokenChecking,
+                    tokenValid = tokenValid,
+                    onCheckToken = {
+                        if (viewModel.validateToken(token)) {
+                            viewModel.saveToken(token)
+                        }
+                    },
+                    onSkip = {
+                        viewModel.markOnboardingDone()
+                        scope.launch { pagerState.animateScrollToPage(2) }
                     }
-                },
-                onSkip = {
-                    viewModel.markOnboardingDone()
-                    scope.launch { pagerState.animateScrollToPage(2) }
-                }
-            )
-            2 -> OnboardingPagePermissions(
-                onDone = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                )
+                2 -> OnboardingPagePermissions(
+                    onDone = {
+                        navController.navigate(Screen.Main.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
                     }
-                }
-            )
+                )
+            }
         }
-    }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 48.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        repeat(3) { index ->
-            Box(
-                modifier = Modifier
-                    .padding(4.dp)
-                    .size(8.dp)
-                    .background(
-                        color = if (pagerState.currentPage == index)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 48.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            repeat(3) { index ->
+                Box(
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(8.dp)
+                        .background(
+                            color = if (pagerState.currentPage == index)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                )
+            }
         }
     }
 }

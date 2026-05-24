@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobileaistudio.data.remote.huggingface.dto.ModelSearchDto
 import com.mobileaistudio.domain.repository.IModelRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +30,8 @@ class DiscoverViewModel @Inject constructor(
     private val _selectedCategory = MutableStateFlow("Все")
     val selectedCategory: StateFlow<String> = _selectedCategory
 
+    private var searchJob: Job? = null
+
     init { search() }
 
     fun onSearchQueryChanged(query: String) {
@@ -36,7 +39,8 @@ class DiscoverViewModel @Inject constructor(
     }
 
     fun search() {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {

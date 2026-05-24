@@ -81,14 +81,12 @@ class ModelDetailViewModel @Inject constructor(
                     author = repoId.split("/").firstOrNull() ?: "",
                     quantization = variant.quantization,
                     fileSizeBytes = variant.fileSizeBytes,
-                    filePath = "models/${variant.fileName}"
+                    filePath = "${context.getExternalFilesDir(null)?.absolutePath ?: "/storage/emulated/0/Android/data/com.mobileaistudio/files"}/models/${variant.fileName}"
                 )
                 modelRepository.saveModel(model)
             } catch (e: Exception) {
-                // Log but don't fail
+                android.util.Log.e("ModelDetailVM", "Failed to save model", e)
             }
-            kotlinx.coroutines.delay(1500)
-            _downloadStarted.value = null
         }
     }
 }

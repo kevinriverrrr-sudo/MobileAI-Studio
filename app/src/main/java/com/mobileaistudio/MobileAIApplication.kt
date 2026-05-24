@@ -36,6 +36,7 @@ class MobileAIApplication : Application() {
     }
 
     companion object {
+        const val DEBUG = BuildConfig.DEBUG
         const val CHANNEL_DOWNLOAD = "download_channel"
         const val CHANNEL_COMPLETION = "completion_channel"
         const val CHANNEL_INFERENCE = "inference_channel"

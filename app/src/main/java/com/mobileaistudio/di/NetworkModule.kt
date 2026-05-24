@@ -1,19 +1,19 @@
 package com.mobileaistudio.di
 
-import android.content.Context
 import com.mobileaistudio.data.remote.huggingface.HuggingFaceApi
 import com.mobileaistudio.data.remote.huggingface.InferenceApi
 import com.mobileaistudio.data.local.UserPreferences
+import com.mobileaistudio.MobileAIApplication
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -35,16 +35,25 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = if (MobileAIApplication.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
 
     @Provides
     @Singleton
+    @Named("auth")
     fun provideAuthInterceptor(userPreferences: UserPreferences): Interceptor {
-        // Pre-load token asynchronously to avoid runBlocking
+        // Pre-load token SYNCHRONOUSLY to avoid race condition
+        try {
+            val token = runBlocking(Dispatchers.IO) { userPreferences.hfToken.first() }
+            cachedToken.set(token)
+        } catch (_: Exception) {}
+
+        // Keep observing for token changes
         appScope.launch {
-            userPreferences.hfToken.first().let { cachedToken.set(it) }
-            // Keep observing for token changes
             userPreferences.hfToken.collect { cachedToken.set(it) }
         }
 
@@ -62,11 +71,11 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         logging: HttpLoggingInterceptor,
-        auth: Interceptor
+        @Named("auth") auth: Interceptor
     ): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(300, TimeUnit.SECONDS)  // 5 min for LLM inference
+        .writeTimeout(120, TimeUnit.SECONDS)
         .addInterceptor(auth)
         .addInterceptor(logging)
         .build()

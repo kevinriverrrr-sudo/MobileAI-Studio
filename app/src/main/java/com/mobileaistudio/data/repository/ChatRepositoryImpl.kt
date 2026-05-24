@@ -59,7 +59,6 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
     }
 
     override suspend fun getMessagesForContext(chatId: String, limit: Int): List<ChatMessage> {
-        // Use kotlinx.coroutines.flow.first() instead of custom extension
         return chatDao.getMessages(chatId).first()
             .takeLast(limit)
             .map { it.toDomain() }
@@ -75,13 +74,17 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
         chatDao.updateChat(chat.copy(isArchived = true))
     }
 
-    private fun ChatEntity.toDomain() = ChatConversation(
-        id = id, title = title.ifBlank { "Новый чат" }, modelId = modelId, modelName = "",
-        createdAt = createdAt, updatedAt = updatedAt,
-        folderId = folderId, isPinned = isPinned, isArchived = isArchived,
-        messageCount = 0,
-        lastMessagePreview = ""
-    )
+    private fun ChatEntity.toDomain(): ChatConversation {
+        return ChatConversation(
+            id = id, title = title.ifBlank { "Новый чат" },
+            modelId = modelId,
+            modelName = modelName,
+            createdAt = createdAt, updatedAt = updatedAt,
+            folderId = folderId, isPinned = isPinned, isArchived = isArchived,
+            messageCount = 0,
+            lastMessagePreview = ""
+        )
+    }
 
     private fun MessageEntity.toDomain() = ChatMessage(
         id = id, chatId = chatId,
@@ -89,7 +92,8 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
         content = content, timestamp = timestamp,
         thinkingContent = thinkingContent, tokenCount = tokenCount,
         generationTimeMs = generationTimeMs, tokensPerSecond = tokensPerSecond,
-        isRegeneration = isRegeneration, regenGroup = regenGroup
+        isRegeneration = isRegeneration, regenGroup = regenGroup,
+        attachments = if (attachments.isBlank()) emptyList() else attachments.split(",").filter { it.isNotBlank() }
     )
 
     private fun ChatMessage.toEntity() = MessageEntity(
@@ -105,7 +109,6 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
         return try {
             MessageRole.valueOf(roleStr.uppercase())
         } catch (e: IllegalArgumentException) {
-            // Fallback for invalid role strings (e.g., "user" instead of "USER")
             when (roleStr.lowercase()) {
                 "user" -> MessageRole.USER
                 "assistant" -> MessageRole.ASSISTANT

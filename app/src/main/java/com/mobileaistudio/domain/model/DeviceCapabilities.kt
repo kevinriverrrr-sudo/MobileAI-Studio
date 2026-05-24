@@ -20,7 +20,7 @@ data class DeviceCapabilities(
     val nnapiSupportedOps: List<String> = emptyList(),
     val deviceName: String = "Device",
     val deviceManufacturer: String = "Manufacturer",
-    val androidVersion: Int = 26,
+    val androidVersion: String = "14",
     val sdkVersion: Int = 26
 ) {
     val totalRamGB: Float get() = totalRamBytes / (1024f * 1024f * 1024f)

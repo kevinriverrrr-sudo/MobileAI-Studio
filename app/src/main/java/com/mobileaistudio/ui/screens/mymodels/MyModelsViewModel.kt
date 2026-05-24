@@ -1,5 +1,6 @@
 package com.mobileaistudio.ui.screens.mymodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobileaistudio.domain.model.AIModel
@@ -23,27 +24,46 @@ class MyModelsViewModel @Inject constructor(
     private val _storageUsed = MutableStateFlow(0f)
     val storageUsed: StateFlow<Float> = _storageUsed
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     init {
         viewModelScope.launch {
             models.collect { mList ->
                 val totalBytes = mList.sumOf { it.fileSizeBytes }
-                _storageUsed.value = if (totalBytes > 0) 0.3f else 0f // Placeholder
+                // Assume ~64GB total app storage
+                val totalStorage = 64L * 1024 * 1024 * 1024
+                _storageUsed.value = if (totalStorage > 0) {
+                    (totalBytes.toFloat() / totalStorage.toFloat()).coerceIn(0f, 1f)
+                } else 0f
             }
         }
     }
 
+    fun clearError() { _error.value = null }
+
     fun toggleModelLoaded(modelId: String) {
         viewModelScope.launch {
-            val model = modelRepository.getModelById(modelId) ?: return@launch
-            val newLoaded = !model.isLoaded
-            modelRepository.setModelLoaded(modelId, newLoaded)
-            if (newLoaded) modelRepository.updateLastUsed(modelId)
+            try {
+                val model = modelRepository.getModelById(modelId) ?: return@launch
+                val newLoaded = !model.isLoaded
+                modelRepository.setModelLoaded(modelId, newLoaded)
+                if (newLoaded) modelRepository.updateLastUsed(modelId)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Ошибка переключения модели"
+                Log.e("MyModelsVM", "toggleModelLoaded failed", e)
+            }
         }
     }
 
     fun deleteModel(modelId: String) {
         viewModelScope.launch {
-            modelRepository.deleteModel(modelId)
+            try {
+                modelRepository.deleteModel(modelId)
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Ошибка удаления модели"
+                Log.e("MyModelsVM", "deleteModel failed", e)
+            }
         }
     }
 }

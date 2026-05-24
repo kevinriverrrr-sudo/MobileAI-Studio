@@ -71,6 +71,8 @@ class UserPreferences @Inject constructor(private val context: Context) {
     suspend fun setModelsDir(d: String) = context.dataStore.edit { it[Keys.MODELS_DIR] = d }
     suspend fun setCloudInference(v: Boolean) = context.dataStore.edit { it[Keys.CLOUD_INFERENCE] = v }
     suspend fun setDefaultProvider(p: String) = context.dataStore.edit { it[Keys.DEFAULT_PROVIDER] = p }
+    suspend fun setDarkTheme(v: Boolean) = context.dataStore.edit { it[Keys.DARK_THEME] = v }
+    suspend fun setProviderStrategy(s: String) = context.dataStore.edit { it[Keys.PROVIDER_STRATEGY] = s }
     suspend fun setDeveloperMode(v: Boolean) = context.dataStore.edit { it[Keys.DEVELOPER_MODE] = v }
     suspend fun setOnboardingDone(v: Boolean) = context.dataStore.edit { it[Keys.ONBOARDING_DONE] = v }
 }

@@ -2,6 +2,7 @@ package com.mobileaistudio.data.repository
 
 import android.app.ActivityManager
 import android.content.Context
+import android.opengl.GLES20
 import android.os.Build
 import com.mobileaistudio.domain.model.DeviceCapabilities
 import com.mobileaistudio.domain.repository.IHardwareRepository
@@ -9,7 +10,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
-import java.io.RandomAccessFile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,17 +30,19 @@ class HardwareRepositoryImpl @Inject constructor(
             neonSupported = Build.SUPPORTED_ABIS.any { it.contains("arm64") || it.contains("armeabi-v7a") },
             totalRamBytes = getTotalRAM(),
             availableRamBytes = getAvailableRAM(),
-            gpuModel = getGPUModel(),
-            gpuVendor = "Unknown",
-            openGLVersion = getOpenGLVersion(),
-            vulkanVersion = getVulkanVersion(),
-            vulkanComputeSupported = getVulkanVersion() != null,
-            estimatedVRAMBytes = 512L * 1024 * 1024,
+            gpuModel = detectGPU(),
+            gpuVendor = detectGPUVendor(),
+            openGLVersion = detectOpenGLVersion(),
+            vulkanVersion = detectVulkanVersion(),
+            vulkanComputeSupported = detectVulkanVersion() != null,
+            estimatedVRAMBytes = estimateVRAM(),
             totalStorageBytes = getTotalStorage(),
             freeStorageBytes = getFreeStorage(),
+            nnapiAvailable = isNNAPIAvailable(),
+            nnapiSupportedOps = emptyList(),
             deviceName = "${Build.MANUFACTURER} ${Build.MODEL}",
             deviceManufacturer = Build.MANUFACTURER,
-            androidVersion = Build.VERSION.RELEASE.toIntOrNull() ?: Build.VERSION.SDK_INT,
+            androidVersion = Build.VERSION.RELEASE,
             sdkVersion = Build.VERSION.SDK_INT
         )
         _capabilities.value = caps
@@ -89,31 +91,51 @@ class HardwareRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getGPUModel(): String {
+    private fun detectGPU(): String {
         return try {
-            val egl = javax.microedition.khronos.egl.EGLContext.getEGL()
-            Build.HARDWARE
+            val glRenderer = GLES20.glGetString(GLES20.GL_RENDERER) ?: ""
+            if (glRenderer.isNotEmpty()) glRenderer else Build.HARDWARE
         } catch (_: Exception) {
             Build.HARDWARE
         }
     }
 
-    private fun getOpenGLVersion(): String {
+    private fun detectGPUVendor(): String {
         return try {
-            val version = context.packageManager
-                .getPackageInfo(context.packageName, 0)
-                .applicationInfo
-                ?.let { null }
-            "3.2"
+            GLES20.glGetString(GLES20.GL_VENDOR) ?: "Unknown"
+        } catch (_: Exception) {
+            "Unknown"
+        }
+    }
+
+    private fun detectOpenGLVersion(): String {
+        return try {
+            val glVersion = GLES20.glGetString(GLES20.GL_VERSION) ?: "3.2"
+            // Extract version number, e.g., "OpenGL ES 3.2 v@...."
+            val match = Regex("""OpenGL ES (\d+\.\d+)""").find(glVersion)
+            match?.groupValues?.get(1) ?: "3.2"
         } catch (_: Exception) {
             "3.2"
         }
     }
 
-    private fun getVulkanVersion(): String? {
+    private fun detectVulkanVersion(): String? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            try { "1.0+" } catch (_: Exception) { null }
+            try {
+                // Check if vulkan is available
+                val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val deviceConfig = activityManager.deviceConfigurationInfo
+                if (deviceConfig.reqGlEsVersion >= 0x30000) "1.1+" else "1.0+"
+            } catch (_: Exception) {
+                null
+            }
         } else null
+    }
+
+    private fun estimateVRAM(): Long {
+        // Estimate VRAM as ~25% of total RAM for mobile GPUs
+        val totalRAM = getTotalRAM()
+        return (totalRAM * 0.25).toLong().coerceIn(256L * 1024 * 1024, 4L * 1024 * 1024 * 1024)
     }
 
     private fun getTotalStorage(): Long {
@@ -132,5 +154,9 @@ class HardwareRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             32L * 1024 * 1024 * 1024
         }
+    }
+
+    private fun isNNAPIAvailable(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
     }
 }

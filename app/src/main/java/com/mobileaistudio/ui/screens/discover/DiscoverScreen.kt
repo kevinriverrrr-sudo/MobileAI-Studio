@@ -32,15 +32,17 @@ fun DiscoverScreen(
     val models by viewModel.models.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val selectedCategory by viewModel.selectedCategory.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Search bar
+        var searchBarActive by remember { mutableStateOf(false) }
         SearchBar(
             query = searchQuery,
             onQueryChange = { viewModel.onSearchQueryChanged(it) },
-            onSearch = { viewModel.search() },
-            active = false,
-            onActiveChange = {},
+            onSearch = { viewModel.search(); searchBarActive = false },
+            active = searchBarActive,
+            onActiveChange = { searchBarActive = it },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -57,7 +59,7 @@ fun DiscoverScreen(
             )
             items(categories) { cat ->
                 FilterChip(
-                    selected = viewModel.selectedCategory.collectAsState().value == cat,
+                    selected = selectedCategory == cat,
                     onClick = { viewModel.selectCategory(cat) },
                     label = { Text(cat, style = MaterialTheme.typography.labelMedium) },
                     modifier = Modifier.height(32.dp)
@@ -83,7 +85,7 @@ fun DiscoverScreen(
         } else if (models.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.SearchOff, null,
+                    Icon(Icons.Default.Search, "Поиск",
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     Spacer(modifier = Modifier.height(16.dp))
@@ -175,7 +177,7 @@ fun ModelCard(model: ModelSearchDto, onClick: () -> Unit) {
                 }
             }
 
-            IconButton(onClick = onClick) {
+            IconButton(onClick = {}) {
                 Icon(Icons.Default.Download, "Скачать",
                     tint = MaterialTheme.colorScheme.primary)
             }

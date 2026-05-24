@@ -1,5 +1,6 @@
 package com.mobileaistudio.data.repository
 
+import android.util.Log
 import com.mobileaistudio.data.local.db.dao.ModelDao
 import com.mobileaistudio.data.local.db.entities.ModelEntity
 import com.mobileaistudio.data.remote.huggingface.HuggingFaceApi
@@ -9,6 +10,7 @@ import com.mobileaistudio.domain.repository.IModelRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.File
 import javax.inject.Inject
 
 class ModelRepositoryImpl @Inject constructor(
@@ -28,32 +30,24 @@ class ModelRepositoryImpl @Inject constructor(
     override suspend fun searchHuggingFace(
         query: String, filter: String?, sort: String, limit: Int
     ): List<ModelSearchDto> {
-        return try {
-            api.searchModels(
-                search = query.ifBlank { null },
-                filter = filter,
-                sort = sort,
-                limit = limit
-            )
-        } catch (e: Exception) {
-            emptyList()
-        }
+        return api.searchModels(
+            search = query.ifBlank { null },
+            filter = filter,
+            sort = sort,
+            limit = limit
+        )
     }
 
     override suspend fun getModelDetails(repoId: String): List<GGUFVariant> {
-        return try {
-            val files = api.getModelFiles(repoId)
-            files.filter { it.path.endsWith(".gguf") }.map { file ->
-                GGUFVariant(
-                    fileName = file.path,
-                    quantization = extractQuant(file.path),
-                    fileSizeBytes = file.size,
-                    downloadUrl = "https://huggingface.co/$repoId/resolve/main/${file.path}",
-                    estimatedRAM = (file.size * 1.5).toLong()
-                )
-            }
-        } catch (e: Exception) {
-            emptyList()
+        val files = api.getModelFiles(repoId)
+        return files.filter { it.path.endsWith(".gguf") }.map { file ->
+            GGUFVariant(
+                fileName = file.path,
+                quantization = extractQuant(file.path),
+                fileSizeBytes = file.size,
+                downloadUrl = "https://huggingface.co/$repoId/resolve/main/${file.path}",
+                estimatedRAM = (file.size * 1.5).toLong()
+            )
         }
     }
 
@@ -62,6 +56,18 @@ class ModelRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteModel(id: String) {
+        val model = modelDao.getModelById(id)
+        if (model != null) {
+            try {
+                val file = File(model.filePath)
+                if (file.exists()) {
+                    file.delete()
+                    Log.i("ModelRepo", "Deleted file: ${model.filePath}")
+                }
+            } catch (e: Exception) {
+                Log.e("ModelRepo", "Failed to delete model file", e)
+            }
+        }
         modelDao.deleteById(id)
     }
 

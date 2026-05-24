@@ -10,7 +10,7 @@ data class ModelSearchDto(
     @SerializedName("lastModified") val lastModified: String = "",
     @SerializedName("private") val isPrivate: Boolean = false,
     @SerializedName("disabled") val isDisabled: Boolean = false,
-    @SerializedName("gated") val isGated: String? = null,
+    @SerializedName("gated") val isGated: Any? = null,
     @SerializedName("pipeline_tag") val pipelineTag: String? = null,
     @SerializedName("tags") val tags: List<String> = emptyList(),
     @SerializedName("downloads") val downloads: Int = 0,

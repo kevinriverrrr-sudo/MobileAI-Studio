@@ -23,32 +23,51 @@ class DownloadService : Service() {
     private var downloadJob: Job? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val modelName = intent?.getStringExtra("model_name") ?: "Модель"
-        val downloadUrl = intent?.getStringExtra("download_url") ?: ""
-        val fileName = intent?.getStringExtra("file_name") ?: "model.gguf"
+        val modelName = intent?.getStringExtra(EXTRA_MODEL_NAME) ?: "Модель"
+        val downloadUrl = intent?.getStringExtra(EXTRA_DOWNLOAD_URL) ?: ""
+        val fileName = intent?.getStringExtra(EXTRA_FILE_NAME) ?: "model.gguf"
+
+        if (downloadUrl.isEmpty()) {
+            // No URL provided — stop immediately
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val notification = createProgressNotification(modelName, 0)
         startForeground(NOTIFICATION_ID, notification)
 
-        if (downloadUrl.isNotEmpty()) {
-            downloadJob = serviceScope.launch {
-                downloadFile(downloadUrl, fileName, modelName)
-            }
+        // Cancel any existing download
+        downloadJob?.cancel()
+        downloadJob = serviceScope.launch {
+            downloadFile(downloadUrl, fileName, modelName)
         }
 
-        return START_NOT_STICKY
+        return START_REDELIVER_INTENT
     }
 
     private suspend fun downloadFile(urlString: String, fileName: String, modelName: String) {
         var connection: HttpURLConnection? = null
+        val tmpFile = File(getExternalFilesDir(null), "models/${fileName}.tmp")
+        val finalFile = File(getExternalFilesDir(null), "models/$fileName")
+
+        // If final file already exists, skip download
+        if (finalFile.exists()) {
+            showCompletionNotification(modelName)
+            Log.i(TAG, "File already exists: $fileName")
+            stopSelf()
+            return
+        }
+
         try {
             val url = URL(urlString)
             connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 30000
-            connection.readTimeout = 120000
+            connection.readTimeout = 300000  // 5 min
             connection.connect()
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                 Log.e(TAG, "Download failed: ${connection.responseCode}")
+                showErrorNotification(modelName, "HTTP ${connection.responseCode}")
                 stopSelf()
                 return
             }
@@ -56,10 +75,12 @@ class DownloadService : Service() {
             val fileSize = connection.contentLength
             val modelsDir = File(getExternalFilesDir(null), "models")
             if (!modelsDir.exists()) modelsDir.mkdirs()
-            val outputFile = File(modelsDir, fileName)
+
+            // Clean up any previous partial download
+            if (tmpFile.exists()) tmpFile.delete()
 
             connection.inputStream.use { input ->
-                FileOutputStream(outputFile).use { output ->
+                FileOutputStream(tmpFile).use { output ->
                     val buffer = ByteArray(8192)
                     var totalRead = 0L
                     var lastUpdate = 0L
@@ -80,15 +101,21 @@ class DownloadService : Service() {
                 }
             }
 
-            // Download complete
+            // Atomic rename: tmp -> final
+            tmpFile.renameTo(finalFile)
+
             showCompletionNotification(modelName)
             Log.i(TAG, "Download complete: $fileName")
             stopSelf()
         } catch (e: CancellationException) {
             Log.i(TAG, "Download cancelled")
+            // Clean up partial file
+            if (tmpFile.exists()) tmpFile.delete()
             stopSelf()
         } catch (e: Exception) {
             Log.e(TAG, "Download error", e)
+            // Clean up partial file
+            if (tmpFile.exists()) tmpFile.delete()
             showErrorNotification(modelName, e.message ?: "Неизвестная ошибка")
             stopSelf()
         } finally {
@@ -146,12 +173,15 @@ class DownloadService : Service() {
     companion object {
         const val NOTIFICATION_ID = 1001
         const val TAG = "DownloadService"
+        const val EXTRA_MODEL_NAME = "model_name"
+        const val EXTRA_DOWNLOAD_URL = "download_url"
+        const val EXTRA_FILE_NAME = "file_name"
 
         fun startDownload(context: Context, modelName: String, downloadUrl: String, fileName: String) {
             val intent = Intent(context, DownloadService::class.java).apply {
-                putExtra("model_name", modelName)
-                putExtra("download_url", downloadUrl)
-                putExtra("file_name", fileName)
+                putExtra(EXTRA_MODEL_NAME, modelName)
+                putExtra(EXTRA_DOWNLOAD_URL, downloadUrl)
+                putExtra(EXTRA_FILE_NAME, fileName)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)

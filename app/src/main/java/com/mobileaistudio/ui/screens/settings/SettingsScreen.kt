@@ -103,6 +103,8 @@ fun SettingsScreen(navController: NavController, viewModel: SettingsViewModel = 
     val autoGpuOffload by viewModel.autoGpuOffload.collectAsState()
     val flashAttention by viewModel.flashAttention.collectAsState()
     val hfToken by viewModel.hfToken.collectAsState()
+    var showTokenDialog by remember { mutableStateOf(false) }
+    var editToken by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -119,7 +121,8 @@ fun SettingsScreen(navController: NavController, viewModel: SettingsViewModel = 
             color = MaterialTheme.colorScheme.primary)
 
         SettingItem(icon = Icons.Default.Key, title = "API Token",
-            subtitle = if (hfToken.isNotEmpty()) "${hfToken.take(8)}...${hfToken.takeLast(4)}" else "Не задан")
+            subtitle = if (hfToken.isNotEmpty()) "${hfToken.take(8)}...${hfToken.takeLast(4)}" else "Не задан",
+            onClick = { editToken = hfToken; showTokenDialog = true })
         SettingItem(icon = Icons.Default.Person, title = "Аккаунт",
             subtitle = "Подключён через токен")
         SettingSwitch(title = "Облачная инференс", subtitle = "Использовать HF Providers",
@@ -185,6 +188,36 @@ fun SettingsScreen(navController: NavController, viewModel: SettingsViewModel = 
             onClick = { navController.navigate(Screen.HardwareInfo.route) })
         SettingItem(icon = Icons.Default.Info, title = "О приложении",
             subtitle = "MobileAI Studio v1.0.0")
+
+        // Token edit dialog
+    if (showTokenDialog) {
+        AlertDialog(
+            onDismissRequest = { showTokenDialog = false },
+            title = { Text("HuggingFace API Token") },
+            text = {
+                OutlinedTextField(
+                    value = editToken,
+                    onValueChange = { editToken = it },
+                    label = { Text("Token") },
+                    placeholder = { Text("hf_...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setHfToken(editToken)
+                    showTokenDialog = false
+                }) { Text("Сохранить") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.setHfToken("")
+                    showTokenDialog = false
+                }) { Text("Удалить") }
+            }
+        )
+    }
 
         Spacer(modifier = Modifier.height(32.dp))
     }

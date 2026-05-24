@@ -1,5 +1,6 @@
 package com.mobileaistudio.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,11 +25,9 @@ fun AppNavigation() {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(navController = navController)
         }
-        // Main screen with bottom nav — hosts tabs inline
         composable(Screen.Main.route) {
             MainScreen(navController = navController)
         }
-        // Full-screen chat (navigated from chat tab)
         composable(
             route = Screen.Chat.route,
             arguments = listOf(navArgument("chatId") { type = NavType.StringType })
@@ -36,15 +35,13 @@ fun AppNavigation() {
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
             ChatScreen(navController = navController, chatId = chatId)
         }
-        // Model detail page (navigated from Discover tab)
         composable(
             route = Screen.ModelDetail.route,
             arguments = listOf(navArgument("repoId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val repoId = backStackEntry.arguments?.getString("repoId") ?: ""
+            val repoId = Uri.decode(backStackEntry.arguments?.getString("repoId") ?: "")
             ModelDetailScreen(navController = navController, repoId = repoId)
         }
-        // Hardware info page (navigated from Settings tab)
         composable(Screen.HardwareInfo.route) {
             HardwareInfoScreen(navController = navController)
         }
