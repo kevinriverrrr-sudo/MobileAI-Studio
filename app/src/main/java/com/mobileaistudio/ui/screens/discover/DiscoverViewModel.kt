@@ -57,8 +57,7 @@ class DiscoverViewModel @Inject constructor(
                 )
                 _models.value = results.filter {
                     it.tags.any { t -> t.contains("gguf", ignoreCase = true) } ||
-                    it.libraryName?.equals("gguf", ignoreCase = true) == true ||
-                    it.tags.any { t -> t.contains("gguf", ignoreCase = true) }
+                    it.libraryName?.equals("gguf", ignoreCase = true) == true
                 }.takeIf { it.isNotEmpty() } ?: results
             } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка загрузки"

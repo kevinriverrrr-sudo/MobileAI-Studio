@@ -7,13 +7,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mobileaistudio.ui.screens.chat.ChatScreen
-import com.mobileaistudio.ui.screens.discover.DiscoverScreen
 import com.mobileaistudio.ui.screens.discover.ModelDetailScreen
 import com.mobileaistudio.ui.screens.hardware.HardwareInfoScreen
 import com.mobileaistudio.ui.screens.main.MainScreen
-import com.mobileaistudio.ui.screens.mymodels.MyModelsScreen
 import com.mobileaistudio.ui.screens.onboarding.OnboardingScreen
-import com.mobileaistudio.ui.screens.settings.SettingsScreen
 import com.mobileaistudio.ui.screens.splash.SplashScreen
 
 @Composable
@@ -27,9 +24,11 @@ fun AppNavigation() {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(navController = navController)
         }
+        // Main screen with bottom nav — hosts tabs inline
         composable(Screen.Main.route) {
             MainScreen(navController = navController)
         }
+        // Full-screen chat (navigated from chat tab)
         composable(
             route = Screen.Chat.route,
             arguments = listOf(navArgument("chatId") { type = NavType.StringType })
@@ -37,9 +36,7 @@ fun AppNavigation() {
             val chatId = backStackEntry.arguments?.getString("chatId") ?: "new"
             ChatScreen(navController = navController, chatId = chatId)
         }
-        composable(Screen.Discover.route) {
-            DiscoverScreen(navController = navController)
-        }
+        // Model detail page (navigated from Discover tab)
         composable(
             route = Screen.ModelDetail.route,
             arguments = listOf(navArgument("repoId") { type = NavType.StringType })
@@ -47,12 +44,7 @@ fun AppNavigation() {
             val repoId = backStackEntry.arguments?.getString("repoId") ?: ""
             ModelDetailScreen(navController = navController, repoId = repoId)
         }
-        composable(Screen.MyModels.route) {
-            MyModelsScreen(navController = navController)
-        }
-        composable(Screen.Settings.route) {
-            SettingsScreen(navController = navController)
-        }
+        // Hardware info page (navigated from Settings tab)
         composable(Screen.HardwareInfo.route) {
             HardwareInfoScreen(navController = navController)
         }

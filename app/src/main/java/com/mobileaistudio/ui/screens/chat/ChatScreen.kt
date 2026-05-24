@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +34,7 @@ fun ChatScreen(
     val isGenerating by viewModel.isGenerating.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val tokensPerSec by viewModel.tokensPerSec.collectAsState()
+    val error by viewModel.error.collectAsState()
     val listState = rememberLazyListState()
 
     LaunchedEffect(messages.size) {
@@ -84,12 +84,6 @@ fun ChatScreen(
                     IconButton(onClick = { viewModel.createNewChat() }) {
                         Icon(Icons.Default.Add, "Новый чат")
                     }
-                    IconButton(onClick = { /* Chat settings */ }) {
-                        Icon(Icons.Default.Tune, "Настройки")
-                    }
-                    IconButton(onClick = { /* Export */ }) {
-                        Icon(Icons.Default.MoreVert, "Ещё")
-                    }
                 }
             )
         }
@@ -97,6 +91,21 @@ fun ChatScreen(
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(padding)) {
+
+            // Error banner
+            if (error != null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.errorContainer
+                ) {
+                    Text(
+                        error!!,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
 
             // Messages list
             LazyColumn(
@@ -114,7 +123,10 @@ fun ChatScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🧠", fontSize = 48.sp)
+                                Text(
+                                    "🧠",
+                                    fontSize = 48.sp
+                                )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     "Начните разговор",
@@ -122,7 +134,7 @@ fun ChatScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
-                                    "Выберите модель и отправьте сообщение",
+                                    "Отправьте сообщение для начала",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -253,7 +265,7 @@ fun MessageBubble(message: ChatMessage, onCopy: (String) -> Unit) {
                     }
                     if (message.tokensPerSecond > 0) {
                         Text(
-                            "${message.tokensPerSecond} t/s",
+                            "%.1f t/s".format(message.tokensPerSecond),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

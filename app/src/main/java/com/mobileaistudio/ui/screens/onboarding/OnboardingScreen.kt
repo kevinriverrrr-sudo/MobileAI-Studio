@@ -20,19 +20,63 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import com.mobileaistudio.ui.navigation.Screen
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.mobileaistudio.data.local.UserPreferences
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
+
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
+    private val userPreferences: UserPreferences
+) : ViewModel() {
+
+    private val _tokenValid = MutableStateFlow(false)
+    val tokenValid: StateFlow<Boolean> = _tokenValid
+
+    private val _tokenChecking = MutableStateFlow(false)
+    val tokenChecking: StateFlow<Boolean> = _tokenChecking
+
+    private val _tokenSaved = MutableStateFlow(false)
+    val tokenSaved: StateFlow<Boolean> = _tokenSaved
+
+    fun validateToken(token: String): Boolean {
+        val valid = token.startsWith("hf_") && token.length > 10
+        _tokenValid.value = valid
+        return valid
+    }
+
+    fun saveToken(token: String) {
+        viewModelScope.launch {
+            userPreferences.setHfToken(token)
+            userPreferences.setOnboardingDone(true)
+            _tokenSaved.value = true
+        }
+    }
+
+    fun markOnboardingDone() {
+        viewModelScope.launch {
+            userPreferences.setOnboardingDone(true)
+        }
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen(navController: NavController) {
+fun OnboardingScreen(navController: NavController, viewModel: OnboardingViewModel = hiltViewModel()) {
     val context = LocalContext.current
     var token by remember { mutableStateOf("") }
-    var tokenValid by remember { mutableStateOf(false) }
-    var tokenChecking by remember { mutableStateOf(false) }
+    val tokenValid by viewModel.tokenValid.collectAsState()
+    val tokenChecking by viewModel.tokenChecking.collectAsState()
+    val tokenSaved by viewModel.tokenSaved.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(tokenValid) {
-        if (tokenValid) {
+    // Auto-advance when token is saved
+    LaunchedEffect(tokenSaved) {
+        if (tokenSaved) {
             pagerState.animateScrollToPage(2)
         }
     }
@@ -50,11 +94,14 @@ fun OnboardingScreen(navController: NavController) {
                 tokenChecking = tokenChecking,
                 tokenValid = tokenValid,
                 onCheckToken = {
-                    tokenChecking = true
-                    tokenValid = token.startsWith("hf_") && token.length > 10
-                    tokenChecking = false
+                    if (viewModel.validateToken(token)) {
+                        viewModel.saveToken(token)
+                    }
                 },
-                onSkip = { scope.launch { pagerState.animateScrollToPage(2) } }
+                onSkip = {
+                    viewModel.markOnboardingDone()
+                    scope.launch { pagerState.animateScrollToPage(2) }
+                }
             )
             2 -> OnboardingPagePermissions(
                 onDone = {
@@ -180,7 +227,7 @@ fun OnboardingPageHuggingFace(
                 modifier = Modifier.size(20.dp),
                 color = MaterialTheme.colorScheme.onPrimary,
                 strokeWidth = 2.dp
-            ) else Text("Проверить и продолжить")
+            ) else Text("Сохранить и продолжить")
         }
         TextButton(onClick = onSkip) {
             Text("Пропустить", color = MaterialTheme.colorScheme.onSurfaceVariant)

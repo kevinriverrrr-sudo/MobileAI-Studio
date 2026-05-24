@@ -5,8 +5,10 @@ import com.mobileaistudio.data.local.db.entities.ChatEntity
 import com.mobileaistudio.data.local.db.entities.MessageEntity
 import com.mobileaistudio.domain.model.ChatConversation
 import com.mobileaistudio.domain.model.ChatMessage
+import com.mobileaistudio.domain.model.MessageRole
 import com.mobileaistudio.domain.repository.IChatRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
@@ -25,7 +27,7 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
     override suspend fun createChat(title: String, modelId: String?): ChatConversation {
         val id = UUID.randomUUID().toString()
         val entity = ChatEntity(
-            id = id, title = title, modelId = modelId,
+            id = id, title = title.ifBlank { "Новый чат" }, modelId = modelId,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
@@ -57,6 +59,7 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
     }
 
     override suspend fun getMessagesForContext(chatId: String, limit: Int): List<ChatMessage> {
+        // Use kotlinx.coroutines.flow.first() instead of custom extension
         return chatDao.getMessages(chatId).first()
             .takeLast(limit)
             .map { it.toDomain() }
@@ -73,7 +76,7 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
     }
 
     private fun ChatEntity.toDomain() = ChatConversation(
-        id = id, title = title, modelId = modelId, modelName = "",
+        id = id, title = title.ifBlank { "Новый чат" }, modelId = modelId, modelName = "",
         createdAt = createdAt, updatedAt = updatedAt,
         folderId = folderId, isPinned = isPinned, isArchived = isArchived,
         messageCount = 0,
@@ -82,7 +85,7 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
 
     private fun MessageEntity.toDomain() = ChatMessage(
         id = id, chatId = chatId,
-        role = com.mobileaistudio.domain.model.MessageRole.valueOf(role),
+        role = parseRole(role),
         content = content, timestamp = timestamp,
         thinkingContent = thinkingContent, tokenCount = tokenCount,
         generationTimeMs = generationTimeMs, tokensPerSecond = tokensPerSecond,
@@ -97,10 +100,18 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
         isRegeneration = isRegeneration, regenGroup = regenGroup,
         attachments = attachments.joinToString(",")
     )
-}
 
-private suspend fun <T> kotlinx.coroutines.flow.Flow<List<T>>.first(): List<T> {
-    var result: List<T> = emptyList()
-    collect { result = it }
-    return result
+    private fun parseRole(roleStr: String): MessageRole {
+        return try {
+            MessageRole.valueOf(roleStr.uppercase())
+        } catch (e: IllegalArgumentException) {
+            // Fallback for invalid role strings (e.g., "user" instead of "USER")
+            when (roleStr.lowercase()) {
+                "user" -> MessageRole.USER
+                "assistant" -> MessageRole.ASSISTANT
+                "system" -> MessageRole.SYSTEM
+                else -> MessageRole.USER
+            }
+        }
+    }
 }

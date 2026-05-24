@@ -9,20 +9,27 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val cachedToken = AtomicReference("")
 
     @Provides
     @Singleton
@@ -33,15 +40,23 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAuthInterceptor(userPreferences: UserPreferences): Interceptor =
-        Interceptor { chain ->
-            val token = runBlocking { userPreferences.hfToken.first() }
+    fun provideAuthInterceptor(userPreferences: UserPreferences): Interceptor {
+        // Pre-load token asynchronously to avoid runBlocking
+        appScope.launch {
+            userPreferences.hfToken.first().let { cachedToken.set(it) }
+            // Keep observing for token changes
+            userPreferences.hfToken.collect { cachedToken.set(it) }
+        }
+
+        return Interceptor { chain ->
+            val token = cachedToken.get()
             val request = chain.request().newBuilder()
             if (token.isNotEmpty()) {
                 request.addHeader("Authorization", "Bearer $token")
             }
             chain.proceed(request.build())
         }
+    }
 
     @Provides
     @Singleton

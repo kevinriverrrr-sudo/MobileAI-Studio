@@ -80,13 +80,28 @@ fun DiscoverScreen(
                     Button(onClick = { viewModel.search() }) { Text("Повторить") }
                 }
             }
+        } else if (models.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.SearchOff, null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Модели не найдены",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Попробуйте изменить запрос",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(models) { model ->
+                items(models, key = { it.modelId }) { model ->
                     ModelCard(
                         model = model,
                         onClick = {
@@ -109,7 +124,6 @@ fun ModelCard(model: ModelSearchDto, onClick: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Model avatar
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(8.dp),
