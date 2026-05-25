@@ -11,14 +11,16 @@ data class InferenceConfig(
     val stopSequences: List<String> = emptyList(),
     val seed: Long = -1L
 ) {
-    fun toMap(): Map<String, Any> = mapOf(
+    fun toMap(): Map<String, Any?> = mapOf(
         "temperature" to temperature,
         "top_p" to topP,
         "top_k" to topK,
         "max_tokens" to maxTokens,
         "frequency_penalty" to frequencyPenalty,
         "presence_penalty" to presencePenalty,
-        "repeat_penalty" to repeatPenalty
+        "repeat_penalty" to repeatPenalty,
+        "stop_sequences" to stopSequences,
+        "seed" to if (seed == -1L) null else seed
     )
 
     companion object {

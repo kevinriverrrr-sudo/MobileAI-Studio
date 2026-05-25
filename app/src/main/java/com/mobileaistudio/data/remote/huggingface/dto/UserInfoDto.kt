@@ -13,7 +13,7 @@ data class UserInfoDto(
 )
 
 data class UsageInfoDto(
-    @SerializedName("monthlySpent") val monthlySpent: Double = 0.0,
-    @SerializedName("monthlyLimit") val monthlyLimit: Double = 0.1,
+    @SerializedName("monthlySpent") val monthlySpent: Map<String, Double>? = null,
+    @SerializedName("monthlyLimit") val monthlyLimit: Map<String, Double>? = null,
     @SerializedName("resetDate") val resetDate: String? = null
 )

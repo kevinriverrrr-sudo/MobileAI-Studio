@@ -41,7 +41,6 @@ class ChatRepositoryImpl @Inject constructor(private val chatDao: ChatDao) : ICh
     }
 
     override suspend fun deleteChat(chatId: String) {
-        chatDao.deleteMessages(chatId)
         chatDao.deleteChatById(chatId)
     }
 

@@ -2,9 +2,10 @@ package com.mobileaistudio.ui.screens.discover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobileaistudio.data.remote.huggingface.dto.ModelSearchDto
+import com.mobileaistudio.domain.model.ModelSearchResult
 import com.mobileaistudio.domain.repository.IModelRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,8 +19,8 @@ class DiscoverViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
-    private val _models = MutableStateFlow<List<ModelSearchDto>>(emptyList())
-    val models: StateFlow<List<ModelSearchDto>> = _models
+    private val _models = MutableStateFlow<List<ModelSearchResult>>(emptyList())
+    val models: StateFlow<List<ModelSearchResult>> = _models
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -63,7 +64,7 @@ class DiscoverViewModel @Inject constructor(
                     it.tags.any { t -> t.contains("gguf", ignoreCase = true) } ||
                     it.libraryName?.equals("gguf", ignoreCase = true) == true
                 }.takeIf { it.isNotEmpty() } ?: results
-            } catch (e: Exception) {
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка загрузки"
             } finally {
                 _isLoading.value = false

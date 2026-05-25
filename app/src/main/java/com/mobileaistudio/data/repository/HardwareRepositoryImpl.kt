@@ -93,8 +93,8 @@ class HardwareRepositoryImpl @Inject constructor(
 
     private fun detectGPU(): String {
         return try {
-            val glRenderer = GLES20.glGetString(GLES20.GL_RENDERER) ?: ""
-            if (glRenderer.isNotEmpty()) glRenderer else Build.HARDWARE
+            val glRenderer = GLES20.glGetString(GLES20.GL_RENDERER)
+            if (!glRenderer.isNullOrEmpty()) glRenderer else Build.HARDWARE
         } catch (_: Exception) {
             Build.HARDWARE
         }
@@ -102,7 +102,8 @@ class HardwareRepositoryImpl @Inject constructor(
 
     private fun detectGPUVendor(): String {
         return try {
-            GLES20.glGetString(GLES20.GL_VENDOR) ?: "Unknown"
+            val vendor = GLES20.glGetString(GLES20.GL_VENDOR)
+            if (!vendor.isNullOrEmpty()) vendor else "Unknown"
         } catch (_: Exception) {
             "Unknown"
         }
@@ -110,10 +111,11 @@ class HardwareRepositoryImpl @Inject constructor(
 
     private fun detectOpenGLVersion(): String {
         return try {
-            val glVersion = GLES20.glGetString(GLES20.GL_VERSION) ?: "3.2"
-            // Extract version number, e.g., "OpenGL ES 3.2 v@...."
-            val match = Regex("""OpenGL ES (\d+\.\d+)""").find(glVersion)
-            match?.groupValues?.get(1) ?: "3.2"
+            val glVersion = GLES20.glGetString(GLES20.GL_VERSION)
+            if (!glVersion.isNullOrEmpty()) {
+                val match = Regex("""OpenGL ES (\d+\.\d+)""").find(glVersion)
+                match?.groupValues?.get(1) ?: "3.2"
+            } else "3.2"
         } catch (_: Exception) {
             "3.2"
         }

@@ -40,7 +40,7 @@ class ChatViewModel @Inject constructor(
 
     val allChats: StateFlow<List<ChatConversation>> =
         chatRepository.getAllChats()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private var currentChatId: String = NEW_CHAT_ID
     private var collectJobHolder: Job? = null
@@ -59,8 +59,14 @@ class ChatViewModel @Inject constructor(
             return
         }
         collectJobHolder = viewModelScope.launch {
-            chatRepository.getMessages(chatId).collect { msgs ->
-                _messages.value = msgs
+            try {
+                chatRepository.getMessages(chatId).collect { msgs ->
+                    _messages.value = msgs
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to load chat"
             }
         }
     }
@@ -71,7 +77,7 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage() {
         val text = _inputText.value.trim()
-        if (text.isBlank() || _isGenerating.value) return
+        if (text.isBlank() || generationJob?.isActive == true) return
 
         val capturedText = text
         _isGenerating.value = true
@@ -128,7 +134,6 @@ class ChatViewModel @Inject constructor(
 
     fun stopGeneration() {
         generationJob?.cancel()
-        _isGenerating.value = false
     }
 
     private suspend fun ensureChatExists(title: String): String {

@@ -106,120 +106,125 @@ fun SettingsScreen(navController: NavController, viewModel: SettingsViewModel = 
     var showTokenDialog by remember { mutableStateOf(false) }
     var editToken by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-    ) {
-        TopAppBar(
-            title = { Text("Настройки", fontWeight = FontWeight.Bold) }
-        )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Настройки", fontWeight = FontWeight.Bold) }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // HuggingFace section
+            Text("HuggingFace", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary)
 
-        // HuggingFace section
-        Text("HuggingFace", style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = MaterialTheme.colorScheme.primary)
+            SettingItem(icon = Icons.Default.Key, title = "API Token",
+                subtitle = if (hfToken.isNotEmpty()) "${hfToken.take(8)}...${hfToken.takeLast(4)}" else "Не задан",
+                onClick = { editToken = hfToken; showTokenDialog = true })
+            SettingItem(icon = Icons.Default.Person, title = "Аккаунт",
+                subtitle = "Подключён через токен")
+            SettingSwitch(title = "Облачная инференс", subtitle = "Использовать HF Providers",
+                checked = cloudInference, onCheckedChange = { viewModel.setCloudInference(it) })
+            SettingItem(icon = Icons.Default.Speed, title = "Провайдер",
+                subtitle = "Авто (самый быстрый)")
 
-        SettingItem(icon = Icons.Default.Key, title = "API Token",
-            subtitle = if (hfToken.isNotEmpty()) "${hfToken.take(8)}...${hfToken.takeLast(4)}" else "Не задан",
-            onClick = { editToken = hfToken; showTokenDialog = true })
-        SettingItem(icon = Icons.Default.Person, title = "Аккаунт",
-            subtitle = "Подключён через токен")
-        SettingSwitch(title = "Облачная инференс", subtitle = "Использовать HF Providers",
-            checked = cloudInference, onCheckedChange = { viewModel.setCloudInference(it) })
-        SettingItem(icon = Icons.Default.Speed, title = "Провайдер",
-            subtitle = "Авто (самый быстрый)")
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            // Download section
+            Text("Скачивание", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary)
 
-        // Download section
-        Text("Скачивание", style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = MaterialTheme.colorScheme.primary)
+            SettingSwitch(title = "Только по Wi-Fi", subtitle = "Не качать через мобильную сеть",
+                checked = wifiOnly, onCheckedChange = { viewModel.setWifiOnly(it) })
+            SettingItem(icon = Icons.Default.Folder, title = "Папка для моделей",
+                subtitle = "/storage/emulated/0/MobileAI/models/")
 
-        SettingSwitch(title = "Только по Wi-Fi", subtitle = "Не качать через мобильную сеть",
-            checked = wifiOnly, onCheckedChange = { viewModel.setWifiOnly(it) })
-        SettingItem(icon = Icons.Default.Folder, title = "Папка для моделей",
-            subtitle = "/storage/emulated/0/MobileAI/models/")
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            // Inference section
+            Text("Инференс", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary)
 
-        // Inference section
-        Text("Инференс", style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = MaterialTheme.colorScheme.primary)
+            SettingItem(icon = Icons.Default.Memory, title = "GPU Backend",
+                subtitle = "Vulkan (рекомендуется)")
+            SettingSwitch(title = "Авто GPU Offload", subtitle = "Автоматическая настройка слоёв",
+                checked = autoGpuOffload, onCheckedChange = { viewModel.setAutoGpuOffload(it) })
+            SettingSwitch(title = "Flash Attention", subtitle = "Ускорение внимания",
+                checked = flashAttention, onCheckedChange = { viewModel.setFlashAttention(it) })
 
-        SettingItem(icon = Icons.Default.Memory, title = "GPU Backend",
-            subtitle = "Vulkan (рекомендуется)")
-        SettingSwitch(title = "Авто GPU Offload", subtitle = "Автоматическая настройка слоёв",
-            checked = autoGpuOffload, onCheckedChange = { viewModel.setAutoGpuOffload(it) })
-        SettingSwitch(title = "Flash Attention", subtitle = "Ускорение внимания",
-            checked = flashAttention, onCheckedChange = { viewModel.setFlashAttention(it) })
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            // Chat section
+            Text("Чат", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary)
 
-        // Chat section
-        Text("Чат", style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = MaterialTheme.colorScheme.primary)
+            SettingSwitch(title = "Потоковый вывод", subtitle = "Отображать ответ по мере генерации",
+                checked = streamingOutput, onCheckedChange = { viewModel.setStreamingOutput(it) })
+            SettingSwitch(title = "Блок размышлений", subtitle = "Показывать ход мыслей модели",
+                checked = showThinking, onCheckedChange = { viewModel.setShowThinking(it) })
 
-        SettingSwitch(title = "Потоковый вывод", subtitle = "Отображать ответ по мере генерации",
-            checked = streamingOutput, onCheckedChange = { viewModel.setStreamingOutput(it) })
-        SettingSwitch(title = "Блок размышлений", subtitle = "Показывать ход мыслей модели",
-            checked = showThinking, onCheckedChange = { viewModel.setShowThinking(it) })
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            // Appearance
+            Text("Внешний вид", style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                color = MaterialTheme.colorScheme.primary)
 
-        // Appearance
-        Text("Внешний вид", style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = MaterialTheme.colorScheme.primary)
+            SettingItem(icon = Icons.Default.Palette, title = "Тема",
+                subtitle = "Системная")
+            SettingItem(icon = Icons.Default.Language, title = "Язык",
+                subtitle = "Русский")
 
-        SettingItem(icon = Icons.Default.Palette, title = "Тема",
-            subtitle = "Системная")
-        SettingItem(icon = Icons.Default.Language, title = "Язык",
-            subtitle = "Русский")
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            // Other
+            SettingItem(icon = Icons.Default.Info, title = "Об устройстве",
+                subtitle = "CPU, GPU, RAM",
+                onClick = { navController.navigate(Screen.HardwareInfo.route) })
+            SettingItem(icon = Icons.Default.Info, title = "О приложении",
+                subtitle = "MobileAI Studio v1.0.0")
 
-        // Other
-        SettingItem(icon = Icons.Default.Info, title = "Об устройстве",
-            subtitle = "CPU, GPU, RAM",
-            onClick = { navController.navigate(Screen.HardwareInfo.route) })
-        SettingItem(icon = Icons.Default.Info, title = "О приложении",
-            subtitle = "MobileAI Studio v1.0.0")
-
-        // Token edit dialog
-    if (showTokenDialog) {
-        AlertDialog(
-            onDismissRequest = { showTokenDialog = false },
-            title = { Text("HuggingFace API Token") },
-            text = {
-                OutlinedTextField(
-                    value = editToken,
-                    onValueChange = { editToken = it },
-                    label = { Text("Token") },
-                    placeholder = { Text("hf_...") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+            // Token edit dialog
+            if (showTokenDialog) {
+                AlertDialog(
+                    onDismissRequest = { showTokenDialog = false },
+                    title = { Text("HuggingFace API Token") },
+                    text = {
+                        OutlinedTextField(
+                            value = editToken,
+                            onValueChange = { editToken = it },
+                            label = { Text("Token") },
+                            placeholder = { Text("hf_...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.setHfToken(editToken)
+                            showTokenDialog = false
+                        }) { Text("Сохранить") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            viewModel.setHfToken("")
+                            showTokenDialog = false
+                        }) { Text("Удалить") }
+                    }
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.setHfToken(editToken)
-                    showTokenDialog = false
-                }) { Text("Сохранить") }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    viewModel.setHfToken("")
-                    showTokenDialog = false
-                }) { Text("Удалить") }
             }
-        )
-    }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 package com.mobileaistudio.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
@@ -42,7 +41,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun MobileAIStudioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -57,7 +56,8 @@ fun MobileAIStudioTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
+            val activity = view.context as? android.app.Activity ?: return@SideEffect
+            val window = activity.window
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

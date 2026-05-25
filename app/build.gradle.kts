@@ -20,13 +20,6 @@ android {
         vectorDrawables { useSupportLibrary = true }
 
         ndk { abiFilters += listOf("arm64-v8a") }
-
-        externalNativeBuild {
-            cmake {
-                cppFlags += "-std=c++17"
-                arguments += "-DANDROID_STL=c++_shared"
-            }
-        }
     }
 
     buildTypes {
@@ -55,12 +48,6 @@ android {
         kotlinCompilerExtensionVersion = "1.5.8"
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
 
     lint {
         checkReleaseBuilds = false
@@ -94,7 +81,7 @@ dependencies {
 
     implementation("com.google.dagger:hilt-android:2.50")
     ksp("com.google.dagger:hilt-compiler:2.50")
-    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

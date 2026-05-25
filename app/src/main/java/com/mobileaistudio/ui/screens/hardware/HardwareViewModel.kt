@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mobileaistudio.domain.model.DeviceCapabilities
 import com.mobileaistudio.domain.repository.IHardwareRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -29,7 +30,7 @@ class HardwareViewModel @Inject constructor(
                     hardwareRepository.detectCapabilities()
                 }
                 _error.value = null
-            } catch (e: Exception) {
+            } catch (e: CancellationException) { throw e } catch (e: Exception) {
                 _error.value = e.message ?: "Ошибка определения характеристик"
             }
         }

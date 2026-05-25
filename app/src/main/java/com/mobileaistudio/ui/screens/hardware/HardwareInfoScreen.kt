@@ -22,7 +22,10 @@ fun HardwareInfoScreen(
     viewModel: HardwareViewModel = hiltViewModel()
 ) {
     val device by viewModel.deviceCapabilities.collectAsState()
-
+    val error by viewModel.error.collectAsState()
+    var isLoading by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(device) { if (device != null) isLoading = false }
     LaunchedEffect(Unit) { viewModel.detect() }
 
     Scaffold(
@@ -45,6 +48,20 @@ fun HardwareInfoScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            if (error != null) {
+                Card(modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                    Text(error.orEmpty(),
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer)
+                }
+            }
+
             InfoCard(Icons.Default.Memory, "Процессор", listOf(
                 "Модель: ${device?.cpuModel ?: "Не определён"}",
                 "Ядра: ${device?.cpuCores ?: "N/A"}",

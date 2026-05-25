@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.mobileaistudio.data.remote.huggingface.dto.ModelSearchDto
+import com.mobileaistudio.domain.model.ModelSearchResult
 import com.mobileaistudio.ui.navigation.Screen
 import com.mobileaistudio.ui.theme.*
 
@@ -36,13 +36,12 @@ fun DiscoverScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Search bar
-        var searchBarActive by remember { mutableStateOf(false) }
         SearchBar(
             query = searchQuery,
             onQueryChange = { viewModel.onSearchQueryChanged(it) },
-            onSearch = { viewModel.search(); searchBarActive = false },
-            active = searchBarActive,
-            onActiveChange = { searchBarActive = it },
+            onSearch = { viewModel.search(); },
+            active = false,
+            onActiveChange = {},
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -117,7 +116,7 @@ fun DiscoverScreen(
 }
 
 @Composable
-fun ModelCard(model: ModelSearchDto, onClick: () -> Unit) {
+fun ModelCard(model: ModelSearchResult, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -171,13 +170,13 @@ fun ModelCard(model: ModelSearchDto, onClick: () -> Unit) {
                     Text("⬇ ${formatDownloads(model.downloads)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("♥ ${formatNumber(model.likes)}",
+                    Text("♥ ${formatDownloads(model.likes)}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            IconButton(onClick = {}) {
+            IconButton(onClick = onClick) {
                 Icon(Icons.Default.Download, "Скачать",
                     tint = MaterialTheme.colorScheme.primary)
             }
@@ -186,12 +185,6 @@ fun ModelCard(model: ModelSearchDto, onClick: () -> Unit) {
 }
 
 fun formatDownloads(n: Int): String = when {
-    n >= 1_000_000 -> "%.1fM".format(n / 1_000_000.0)
-    n >= 1_000 -> "%.1fK".format(n / 1_000.0)
-    else -> n.toString()
-}
-
-fun formatNumber(n: Int): String = when {
     n >= 1_000_000 -> "%.1fM".format(n / 1_000_000.0)
     n >= 1_000 -> "%.1fK".format(n / 1_000.0)
     else -> n.toString()

@@ -44,16 +44,6 @@ fun ChatTabContent(
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate(Screen.Chat.createRoute("new"))
-                },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Новый чат")
-            }
-        }
     ) { padding ->
         if (conversations.isEmpty()) {
             Box(

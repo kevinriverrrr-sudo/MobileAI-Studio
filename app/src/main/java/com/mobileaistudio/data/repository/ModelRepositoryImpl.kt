@@ -29,13 +29,24 @@ class ModelRepositoryImpl @Inject constructor(
 
     override suspend fun searchHuggingFace(
         query: String, filter: String?, sort: String, limit: Int
-    ): List<ModelSearchDto> {
-        return api.searchModels(
+    ): List<ModelSearchResult> {
+        val dtos = api.searchModels(
             search = query.ifBlank { null },
             filter = filter,
             sort = sort,
             limit = limit
         )
+        return dtos.map { dto ->
+            ModelSearchResult(
+                modelId = dto.modelId,
+                author = dto.author,
+                downloads = dto.downloads,
+                likes = dto.likes,
+                pipelineTag = dto.pipelineTag,
+                tags = dto.tags,
+                libraryName = dto.libraryName
+            )
+        }
     }
 
     override suspend fun getModelDetails(repoId: String): List<GGUFVariant> {
@@ -83,7 +94,7 @@ class ModelRepositoryImpl @Inject constructor(
         modelDao.updateLastUsed(id, System.currentTimeMillis())
     }
 
-    override suspend fun getRecommendedModels(capabilities: DeviceCapabilities): List<ModelSearchDto> {
+    override suspend fun getRecommendedModels(capabilities: DeviceCapabilities): List<ModelSearchResult> {
         val ramGB = capabilities.totalRamGB
         val query = when {
             ramGB >= 12f -> "gguf q4 8b instruction"

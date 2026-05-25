@@ -5,7 +5,11 @@ import kotlin.concurrent.Volatile
 object LlamaCppEngine {
 
     init {
-        System.loadLibrary("llama_android")
+        try {
+            System.loadLibrary("llama_android")
+        } catch (e: UnsatisfiedLinkError) {
+            // Native library not available - stub mode
+        }
     }
 
     // --- Native methods ---

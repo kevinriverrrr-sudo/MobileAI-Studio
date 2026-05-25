@@ -11,9 +11,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -46,11 +44,7 @@ object NetworkModule {
     @Singleton
     @Named("auth")
     fun provideAuthInterceptor(userPreferences: UserPreferences): Interceptor {
-        // Pre-load token SYNCHRONOUSLY to avoid race condition
-        try {
-            val token = runBlocking(Dispatchers.IO) { userPreferences.hfToken.first() }
-            cachedToken.set(token)
-        } catch (_: Exception) {}
+        // Token is loaded asynchronously via the collector below
 
         // Keep observing for token changes
         appScope.launch {
@@ -74,7 +68,7 @@ object NetworkModule {
         @Named("auth") auth: Interceptor
     ): OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(300, TimeUnit.SECONDS)  // 5 min for LLM inference
+        .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(120, TimeUnit.SECONDS)
         .addInterceptor(auth)
         .addInterceptor(logging)

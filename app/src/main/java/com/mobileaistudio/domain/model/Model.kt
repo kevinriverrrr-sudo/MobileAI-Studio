@@ -1,5 +1,15 @@
 package com.mobileaistudio.domain.model
 
+data class ModelSearchResult(
+    val modelId: String = "",
+    val author: String = "",
+    val downloads: Int = 0,
+    val likes: Int = 0,
+    val pipelineTag: String? = null,
+    val tags: List<String> = emptyList(),
+    val libraryName: String? = null
+)
+
 data class AIModel(
     val id: String,
     val repoId: String,

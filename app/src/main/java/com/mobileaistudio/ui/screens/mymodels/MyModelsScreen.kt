@@ -85,10 +85,8 @@ fun MyModelsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = {
-                        navController.navigate(Screen.Discover.route) {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                            launchSingleTop = true
-                        }
+                        // Navigate back to main and switch to discover tab
+                        navController.popBackStack(Screen.Main.route, inclusive = false)
                     }) {
                         Text("Обзор моделей")
                     }
